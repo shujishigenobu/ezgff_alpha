@@ -1,7 +1,43 @@
 #!/usr/bin/env ruby
 
 require_relative '../lib/ezgff'
+require 'thor'
 
+class EzgffCLI < Thor
+  desc "view GFF QUERY", "retrieve GFF record by ID and view it in a specified format."
+  option :format, :aliases => :f, :enum => ["json", "gff"], :default => "gff"
+  option :help, :aliases => :h, :type => :boolean
+  def view(gff, query)
+#    puts "subcommand: view"
+#    puts "query #{id}"
+#    puts "db: #{options[:db]}"
+    dbfile = gff + ".sqlite3"
+    db = GffDb.new(dbfile)
+    ann = db.get(query)
+    #p ann
+    #puts ann.to_s
+    case options[:format]
+    when "json"
+      puts ann.to_json
+    when "gff"
+      puts ann
+    else
+      raise "Unknown format: #{options[:format]}"
+    end
+  end
+
+  desc "build GFF", "build database from GFF file"
+  def build(gff)
+    puts "build #{gff}"
+  end
+
+end
+
+
+
+  EzgffCLI.start(ARGV)
+
+  exit
 dbname = ARGV[0]
 query = ARGV[1]
 db = GffDb.new(dbname)
@@ -19,3 +55,4 @@ end
 #db.each_record do |r|
 #  p r.attributes
 #end
+
