@@ -1,0 +1,21 @@
+#!/usr/bin/env ruby
+
+require_relative '../lib/ezgff'
+
+dbname = ARGV[0]
+query = ARGV[1]
+db = GffDb.new(dbname)
+begin
+  ann = db.get(query)
+  #p ann
+  #puts ann.to_s
+  puts ann.to_json
+  #puts ann.parent
+  #puts ann.children
+  #p ann.dbxrefs
+rescue
+  raise $!
+end
+#db.each_record do |r|
+#  p r.attributes
+#end
