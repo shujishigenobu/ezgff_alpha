@@ -4,16 +4,21 @@ require_relative '../lib/ezgff'
 require 'thor'
 
 class EzgffCLI < Thor
-  desc "view GFF QUERY", "retrieve GFF record by ID and view it in a specified format."
-  option :format, :aliases => :f, :enum => ["json", "gff"], :default => "gff"
+  desc "view DB QUERY", "retrieve GFF record by ID and view it in a specified format."
+  option :format, :aliases => :f, :enum => ["json", "gff"], :default => "gff",
+  :banner => "banner"
   option :help, :aliases => :h, :type => :boolean
-  def view(gff, query)
-#    puts "subcommand: view"
-#    puts "query #{id}"
-#    puts "db: #{options[:db]}"
-    dbfile = gff + ".sqlite3"
-    db = GffDb.new(dbfile)
-    ann = db.get(query)
+  def view(db, query)
+    ezdb = db
+    files = Dir["#{ezdb}/*.sqlite3"]
+    sq3_file = nil
+    if files.size == 1
+      sq3_file = files[0]
+    else
+      raise "sqlite3 file not found or multiple files found"
+    end
+    sq3_db = GffDb.new(sq3_file)
+    ann = sq3_db.get(query)
     #p ann
     #puts ann.to_s
     case options[:format]
