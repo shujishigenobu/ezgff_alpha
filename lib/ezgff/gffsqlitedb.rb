@@ -1,5 +1,7 @@
 require 'sqlite3'
 require 'json'
+require 'bio'
+require 'fileutils'
 
 class GffDb
 
@@ -20,8 +22,127 @@ class GffDb
   #   strand       varchar(1),
   #   frame        integer,
   #   attributes   text,
-  #   attributes_json text
+  #   attributes_json json
   # )
+
+  def self.build_db(gff_in, ezdb_base = nil)
+    ezdb_base = (ezdb_base || ".")
+    ezdb_path = ezdb_base + "/" + File.basename(gff_in) + ".ezdb"
+    gff_file = ezdb_path + "/" + File.basename(gff_in)
+    Dir.mkdir(ezdb_path)
+    File.open(gff_file, "w") do |o|
+      File.open(gff_in).each do |l|
+        break if /^\#\#FASTA/.match(l)
+        ## skip header section
+        next if /^\#/.match(l)
+        o.puts l
+      end
+    end
+    
+#    FileUtils.cp(gff_in, gff_file)
+    sq3_file = gff_file + ".sqlite3"
+
+    ## Create table in sqlite3 RDBMS
+    ##   table name: gff_record
+
+    sq3_db = SQLite3::Database.new(sq3_file)
+
+    sql = <<-SQL
+    CREATE TABLE gff_records (
+      line_num     integer primary key,
+      record       text,
+      id           text,
+      parent       text,
+      seqname      text not null,
+      source       text,
+      feature      text,
+      start        integer not null,
+      end          integer not null,
+      score        real,
+      strand       varchar(1),
+      frame        integer,
+      attributes   text,
+      attributes_json json
+    );
+    SQL
+
+    sq3_db.execute(sql)
+
+    ## Read GFF file and insert data into 
+    ## the sqlite3 table
+
+    sq3_db.transaction do 
+      File.open(gff_file).each_with_index do |l, i|
+    #    puts l
+        ## skip FASTA seq section
+        break if /^\#\#FASTA/.match(l)
+    
+        ## skip header section
+        next if /^\#/.match(l)
+        gr = Bio::GFF::GFF3::Record.new(l.chomp)
+    #    p gr.attributes
+        id = nil
+        id_found = gr.attributes.select{|a| a[0] == "ID"}
+        if id_found.size == 1
+          id = id_found[0][1]
+        elsif id_found.size == 0
+          ## do nothing (id = nil)
+        elsif id_found > 1
+          STDERR.puts gr.attributes
+          raise "Multiple IDs found."
+        end
+        parent =  ((gr.attributes.select{|a| a[0] == "Parent"}[0]) || [])[1]
+        a = l.chomp.split(/\t/)
+    
+        sql = "INSERT INTO gff_records (line_num, record, id, parent, seqname, source, feature, start, end, score, strand, frame, attributes, attributes_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        values = [i, l.chomp, id, parent, 
+          a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], 
+          attributes_as_json(l)]
+        sq3_db.execute(sql, values)
+      end
+    end
+
+    ## Indexing the sqlite3 table
+    table = "gff_records"
+    %w{id parent source feature}.each do |col|
+      idxname = "index_#{table}_on_#{col}"
+      sql = "CREATE INDEX #{idxname} ON #{table}(#{col})"
+      sq3_db.execute(sql)
+    end
+
+    return ezdb_path
+
+  end
+
+  def self.build_tabix(gff_in)
+    ## sort gff by position
+    gfffile_sorted = gff_in + ".gz"
+    cmd = %Q{(grep ^"#" #{gff_in}; grep -v ^"#" #{gff_in} | sort -k1,1 -k4,4n) | bgzip > #{gfffile_sorted};}
+    system cmd
+    
+    cmd = "tabix -p gff #{gfffile_sorted}"
+    system cmd
+    
+    STDERR.puts "#{gfffile_sorted} and #{gfffile_sorted}.tbi were generated."
+  end
+
+  def self.attributes_as_json(gffline)
+    gr = Bio::GFF::GFF3::Record.new(gffline.chomp)
+    h = Hash.new
+    gr.attributes.each do |att|
+      k, v = att
+      unless h.has_key?(k)
+        h[k] = []
+      end
+      h[k] << v
+    end
+    h2 = Hash.new
+    h.each do |k, v|
+      h2[k] = v.join(",")
+    end
+    h2.to_json
+  end
 
   def initialize(path)
     @db = SQLite3::Database.new(path)

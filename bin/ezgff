@@ -27,8 +27,13 @@ class EzgffCLI < Thor
   end
 
   desc "build GFF", "build database from GFF file"
-  def build(gff)
-    puts "build #{gff}"
+  option :help, :aliases => :h, :type => :boolean
+  def build(gff_in)
+#    puts "build #{gff_file} => #{dbpath}"
+    dbpath = GffDb.build_db(gff_in)
+    STDERR.puts "new database created: #{dbpath}"
+    gff_file = dbpath + "/" + File.basename(gff_in)
+    GffDb.build_tabix(gff_file)
   end
 
 end
