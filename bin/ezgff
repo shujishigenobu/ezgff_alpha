@@ -16,8 +16,10 @@ class EzgffCLI < Thor
     sq3_file = nil
     if files.size == 1
       sq3_file = files[0]
-    else
-      raise "sqlite3 file not found or multiple files found"
+    elsif files.size == 0
+      raise "sqlite3 file not found"
+    elsif files.size > 1
+      raise "Multiple sqlite3 files found"
     end
     sq3_db = GffDb.new(sq3_file)
     ann = sq3_db.get(query)
