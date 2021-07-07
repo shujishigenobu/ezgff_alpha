@@ -123,10 +123,12 @@ class GffDb
   def self.build_tabix(gff_in)
     ## sort gff by position
     gfffile_sorted = gff_in + ".gz"
-    cmd = %Q{(grep ^"#" #{gff_in}; grep -v ^"#" #{gff_in} | sort -k1,1 -k4,4n) | bgzip > #{gfffile_sorted};}
+    cmd = %Q{(grep ^"#" #{gff_in}; grep -v ^"#" #{gff_in} | sort -t $'\t' -k1,1 -k4,4n) | bgzip > #{gfffile_sorted};}
+    STDERR.puts cmd
     system cmd
-    
+
     cmd = "tabix -p gff #{gfffile_sorted}"
+    STDERR.puts cmd
     system cmd
     
     STDERR.puts "#{gfffile_sorted} and #{gfffile_sorted}.tbi were generated."
