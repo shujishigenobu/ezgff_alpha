@@ -4,9 +4,11 @@ require_relative '../lib/ezgff'
 require 'thor'
 
 class EzgffCLI < Thor
+
   desc "view DB QUERY", "retrieve GFF record by ID and view it in a specified format."
-  option :format, :aliases => :f, :enum => ["json", "gff"], :default => "gff",
-  :banner => "banner"
+  option :format, :aliases => :f, :enum => ["json", "gff"], :default => "gff"
+  option :with_parent, :aliases => :p, :enum => ["yes", "no"], :default => "no", :banner => "yes|no"
+  option :with_children, :aliases => :c, :enum => ["yes", "no"], :default => "no", :banner => "yes|no"
   option :help, :aliases => :h, :type => :boolean
   def view(db, query)
     ezdb = db
@@ -19,16 +21,37 @@ class EzgffCLI < Thor
     end
     sq3_db = GffDb.new(sq3_file)
     ann = sq3_db.get(query)
-    #p ann
-    #puts ann.to_s
+    
+    parent = nil
+    if options[:with_parent] == "yes"
+      parent = ann.parent
+    end
+
+    children = []
+    if options[:with_children] == "yes"
+      ann.children.each do |c|
+        children << c
+      end
+    end
+
+    results = []
+    results << parent if parent
+    results << ann
+    results += children
+      
     case options[:format]
     when "json"
-      puts ann.to_json
+      h = Hash.new
+      ary = results.map{|r| r.to_h}
+      h["gff_records"] = ary
+      puts h.to_json
+      
     when "gff"
-      puts ann
+      puts results
     else
       raise "Unknown format: #{options[:format]}"
     end
+
   end
 
   desc "build GFF", "build database from GFF file"
@@ -41,28 +64,13 @@ class EzgffCLI < Thor
     GffDb.build_tabix(gff_file)
   end
 
+  desc "search DB QUERY", "search GFF record giving query"
+  def search(db, query)
+  end
+
 end
 
+EzgffCLI.start(ARGV)
 
 
-  EzgffCLI.start(ARGV)
-
-  exit
-dbname = ARGV[0]
-query = ARGV[1]
-db = GffDb.new(dbname)
-begin
-  ann = db.get(query)
-  #p ann
-  #puts ann.to_s
-  puts ann.to_json
-  #puts ann.parent
-  #puts ann.children
-  #p ann.dbxrefs
-rescue
-  raise $!
-end
-#db.each_record do |r|
-#  p r.attributes
-#end
 

@@ -3,6 +3,11 @@ require 'json'
 require 'bio'
 require 'fileutils'
 
+#
+# References
+# * Official specification of GFF3 -- https://github.com/The-Sequence-Ontology/Specifications/blob/master/gff3.md
+#
+
 class GffDb
 
   #===
@@ -128,7 +133,10 @@ class GffDb
   end
 
   def self.attributes_as_json(gffline)
+    keys_multi_val_allowed = %{Parent Alias Note Dbxref Ontology_term}
+
     gr = Bio::GFF::GFF3::Record.new(gffline.chomp)
+
     h = Hash.new
     gr.attributes.each do |att|
       k, v = att
@@ -138,8 +146,19 @@ class GffDb
       h[k] << v
     end
     h2 = Hash.new
-    h.each do |k, v|
-      h2[k] = v.join(",")
+    h.each do |key, values|
+      if key == "Dbxref" || key == "Ontology_term"
+        h3 = Hash.new
+        values.each do |val|
+          m = /(.+?):/.match(val)
+          dbtag = m[1]
+          dbval = m.post_match
+          h3.update({dbtag => dbval})
+        end
+        h2[key] = h3
+      else
+        h2[key] = values.join(",")
+      end
     end
     h2.to_json
   end
@@ -243,7 +262,7 @@ class GffDb
     def parent
       if parent_id
         sql = %Q{SELECT * FROM gff_records WHERE id=="#{parent_id}";}
-        puts sql
+#        puts sql
         res = @db.execute(sql)
         an = Annotation.new(@db)
         an.build_from_db_record(res[0])
@@ -256,7 +275,7 @@ class GffDb
     def children
       ary = []
       sql = %Q{SELECT * FROM gff_records WHERE parent=="#{id}";}
-      puts sql
+#      puts sql
       res = @db.execute(sql)
       res.each do |r|
         an = Annotation.new(@db)
