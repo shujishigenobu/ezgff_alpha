@@ -195,6 +195,30 @@ class GffDb
     end
   end
 
+  def get_by_line_number(n)
+    sql = %Q{SELECT * FROM gff_records WHERE line_num=="#{n}";}
+    res = @db.execute(sql)
+    if res.size == 1
+      an = Annotation.new(@db)
+      an.build_from_db_record(res[0])
+      return an
+    else
+      if res.size >= 2
+        raise "multiple hits"
+      elsif res.size == 0
+        raise "not found: #{id}"
+      end
+    end
+  end
+
+  def search(query, num_limit=100)
+    sql = %Q{SELECT * FROM  gff_records WHERE id LIKE "%#{query}%" OR parent LIKE "%#{query}%" OR attributes LIKE "%#{query}%";}
+    STDERR.puts sql
+    res = @db.execute(sql)
+    res2 = res.map{|r| an = Annotation.new(@db); an.build_from_db_record(r); an}
+    res2
+  end
+
   class Annotation
 
     def initialize(db = nil)

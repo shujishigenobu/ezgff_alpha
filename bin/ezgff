@@ -2,10 +2,24 @@
 
 require_relative '../lib/ezgff'
 require 'thor'
+require 'color_echo/get'
 
 class EzgffCLI < Thor
 
-  desc "view DB QUERY", "retrieve GFF record by ID and view it in a specified format."
+  desc "view DB QUERY", "retrieve GFF record by ID and view it in a specified format.
+  DB     path to ezdb
+         ezdb should be created by using 'build' subcommand in advance.
+  QUERY  query for search
+         Two modes, simple mode and advanced mode are available.       
+         Simple mode
+           ID is given and search by the ID.
+         Advanced mode
+           Query is given in KEY=VALUE style. Available keys are
+           ID: ID (ex. ID=rna-XM_029485812.1)
+           LN: Line number (ex. LN=255)
+         Note: Spaces are not allowed before and after =
+           
+  "
   option :format, :aliases => :f, :enum => ["json", "gff"], :default => "gff"
   option :with_parent, :aliases => :p, :enum => ["yes", "no"], :default => "no", :banner => "yes|no"
   option :with_children, :aliases => :c, :enum => ["yes", "no"], :default => "no", :banner => "yes|no"
@@ -22,8 +36,19 @@ class EzgffCLI < Thor
       raise "Multiple sqlite3 files found"
     end
     sq3_db = GffDb.new(sq3_file)
-    ann = sq3_db.get(query)
-    
+
+    if m = /^LN\=/.match(query)
+      ## search by line number
+      query2 = m.post_match.strip
+      ann = sq3_db.get_by_line_number(query2)
+    elsif m = /^ID\=/.match(query)
+      ## search by ID
+      query2 = m.post_match.strip
+      ann = sq3_db.get(query2)
+    else
+      ann = sq3_db.get(query)
+    end
+
     parent = nil
     if options[:with_parent] == "yes"
       parent = ann.parent
@@ -67,7 +92,32 @@ class EzgffCLI < Thor
   end
 
   desc "search DB QUERY", "search GFF record giving query"
+  option :format, :aliases => :f, :enum => ["json", "gff"], :default => "gff"
   def search(db, query)
+    ezdb = db
+    files = Dir["#{ezdb}/*.sqlite3"]
+    sq3_file = nil
+    if files.size == 1
+      sq3_file = files[0]
+    elsif files.size == 0
+      raise "sqlite3 file not found"
+    elsif files.size > 1
+      raise "Multiple sqlite3 files found"
+    end
+    sq3_db = GffDb.new(sq3_file)
+    results = sq3_db.search(query, 100)
+    case options[:format]
+    when "json"
+      h = Hash.new
+      ary = results.map{|r| r.to_h}
+      h["gff_records"] = ary
+      puts h.to_json
+    when "gff"
+      gfftxt = results.map{|r| r.to_s}.join("\n")
+      puts CE.pickup(/#{query}/i, :green, nil, :bold).get(gfftxt)
+    else
+      raise "Unknown format: #{options[:format]}"
+    end
   end
 
 end
