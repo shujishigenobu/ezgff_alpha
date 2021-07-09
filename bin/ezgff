@@ -23,6 +23,8 @@ class EzgffCLI < Thor
   option :format, :aliases => :f, :enum => ["json", "gff"], :default => "gff"
   option :with_parent, :aliases => :p, :enum => ["yes", "no"], :default => "no", :banner => "yes|no"
   option :with_children, :aliases => :c, :enum => ["yes", "no"], :default => "no", :banner => "yes|no"
+  option :with_descendants, :aliases => :d, :enum => ["yes", "no"], :default => "no", :banner => "yes|no"
+  option :with_ancestors, :aliases => :a, :enum => ["yes", "no"], :default => "no", :banner => "yes|no"
   option :help, :aliases => :h, :type => :boolean
   def view(db, query)
     ezdb = db
@@ -49,22 +51,29 @@ class EzgffCLI < Thor
       ann = sq3_db.get(query)
     end
 
-    parent = nil
-    if options[:with_parent] == "yes"
-      parent = ann.parent
-    end
-
-    children = []
-    if options[:with_children] == "yes"
-      ann.children.each do |c|
-        children << c
-      end
-    end
-
     results = []
-    results << parent if parent
-    results << ann
-    results += children
+    if options[:with_descendants] == "yes"
+      results = ann.descendants
+    elsif options[:with_ancestors] == "yes"
+      results = ann.ancestors
+    else
+      parent = nil
+      if options[:with_parent] == "yes"
+        parent = ann.parent
+      end
+
+      children = []
+      if options[:with_children] == "yes"
+        ann.children.each do |c|
+          children << c
+        end
+      end
+
+      results = []
+      results << parent if parent
+      results << ann
+      results += children
+    end
       
     case options[:format]
     when "json"

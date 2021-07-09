@@ -311,6 +311,42 @@ class GffDb
       ary
     end
 
+    def descendants
+      ary = []
+      sql = %Q{WITH RECURSIVE r AS (
+        SELECT * FROM gff_records WHERE id=="#{id}"
+        UNION ALL
+        SELECT gff_records.* FROM gff_records, r WHERE gff_records.parent == r.id
+        )
+        SELECT * FROM r}
+      res = @db.execute(sql)
+      res.each do |r|
+        an = Annotation.new(@db)
+        an.build_from_db_record(r)
+        ary << an
+      end
+      ary
+    end
+
+    def ancestors
+      ary = []
+      sql = %Q{WITH RECURSIVE  ancestor AS (
+        SELECT * FROM gff_records WHERE id=="#{id}"
+        UNION ALL
+        SELECT gff_records.* FROM gff_records, ancestor
+        WHERE ancestor.parent = gff_records.id
+        )
+        SELECT * FROM ancestor;}
+      res = @db.execute(sql)
+      res.each do |r|
+        an = Annotation.new(@db)
+        an.build_from_db_record(r)
+        ary << an
+      end
+      ary
+    end
+
+
     def length
       len = @end - @start + 1
       raise unless len > 0
