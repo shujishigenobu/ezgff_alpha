@@ -6,6 +6,25 @@ require 'color_echo/get'
 
 class EzgffCLI < Thor
 
+  ## hack to enable -h option
+  ## ref: https://magazine.rubyist.net/articles/0046/0046-Milkode.html#%E3%82%AB%E3%82%B9%E3%82%BF%E3%83%9E%E3%82%A4%E3%82%BA-milk-add--h-%E3%82%92%E5%AE%9F%E7%8F%BE%E3%81%99%E3%82%8B
+
+  class_option :help, :type => :boolean, :aliases => '-h', :desc => 'Help message'
+
+  no_tasks do
+    def invoke_command(task, *args)
+      if options[:help] &&
+        task.name != 'grep'
+        EzgffCLI.task_help(shell, task.name)
+      elsif options[:version] && task.name == 'help'
+        puts "milk #{Version}"
+      else
+        super
+      end
+    end
+  end
+  ## end of -h option setting
+
   desc "view DB QUERY", "retrieve GFF record by ID and view it in a specified format.
   DB     path to ezdb
          ezdb should be created by using 'build' subcommand in advance.
@@ -20,12 +39,14 @@ class EzgffCLI < Thor
          Note: Spaces are not allowed before and after =
            
   "
+
   option :format, :aliases => :f, :enum => ["json", "gff"], :default => "gff"
   option :with_parent, :aliases => :p, :enum => ["yes", "no"], :default => "no", :banner => "yes|no"
   option :with_children, :aliases => :c, :enum => ["yes", "no"], :default => "no", :banner => "yes|no"
   option :with_descendants, :aliases => :d, :enum => ["yes", "no"], :default => "no", :banner => "yes|no"
   option :with_ancestors, :aliases => :a, :enum => ["yes", "no"], :default => "no", :banner => "yes|no"
-  option :help, :aliases => :h, :type => :boolean
+  option :type, :aliases => :t, :desc => "description"
+
   def view(db, query)
     ezdb = db
     files = Dir["#{ezdb}/*.sqlite3"]
@@ -74,7 +95,14 @@ class EzgffCLI < Thor
       results << ann
       results += children
     end
-      
+
+    ## Filter results
+    ## - type / feature
+    if options[:type]
+      target_type = options[:type]
+      results = results.select{|r| r.feature == target_type}
+    end
+
     case options[:format]
     when "json"
       h = Hash.new
