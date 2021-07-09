@@ -40,12 +40,9 @@ class EzgffCLI < Thor
            
   "
 
-  option :format, :aliases => :f, :enum => ["json", "gff"], :default => "gff"
-  option :with_parent, :aliases => :p, :enum => ["yes", "no"], :default => "no", :banner => "yes|no"
-  option :with_children, :aliases => :c, :enum => ["yes", "no"], :default => "no", :banner => "yes|no"
-  option :with_descendants, :aliases => :d, :enum => ["yes", "no"], :default => "no", :banner => "yes|no"
-  option :with_ancestors, :aliases => :a, :enum => ["yes", "no"], :default => "no", :banner => "yes|no"
-  option :type, :aliases => :t, :desc => "description"
+  option :format, :aliases => '-f', :enum => ["json", "gff"], :default => "gff", :desc => "Specify output format."
+  option :with, :aliases => '-w', :enum => ["none", "parent", "children", "ancestors", "descendants"], :default => "none", :desc => "Retrieve data with parent or children features."
+  option :type, :aliases => '-t', :desc => "Limit type (Column \#3 in GFF file) such as gene, mRNA and CDS"
 
   def view(db, query)
     ezdb = db
@@ -73,18 +70,17 @@ class EzgffCLI < Thor
     end
 
     results = []
-    if options[:with_descendants] == "yes"
+    if options[:with] == "descendants"
       results = ann.descendants
-    elsif options[:with_ancestors] == "yes"
+    elsif options[:with] == "ancestors"
       results = ann.ancestors
     else
       parent = nil
-      if options[:with_parent] == "yes"
+      if options[:with] == "parent"
         parent = ann.parent
       end
-
       children = []
-      if options[:with_children] == "yes"
+      if options[:with] == "children"
         ann.children.each do |c|
           children << c
         end
