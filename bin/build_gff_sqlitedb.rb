@@ -34,14 +34,14 @@ CREATE TABLE gff_records (
   record       text,
   id           text,
   parent       text,
-  seqname      text not null,
+  seqid      text not null,
   source       text,
-  feature      text,
+  type      text,
   start        integer not null,
   end          integer not null,
   score        real,
   strand       varchar(1),
-  frame        integer,
+  phase        integer,
   attributes   text,
   attributes_json text
 );
@@ -72,7 +72,7 @@ db.transaction do
     parent =  ((gr.attributes.select{|a| a[0] == "Parent"}[0]) || [])[1]
     a = l.chomp.split(/\t/)
 
-    sql = "INSERT INTO gff_records (line_num, record, id, parent, seqname, source, feature, start, end, score, strand, frame, attributes, attributes_json)
+    sql = "INSERT INTO gff_records (line_num, record, id, parent, seqid, source, type, start, end, score, strand, phase, attributes, attributes_json)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     values = [i, l.chomp, id, parent, 
       a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], 
@@ -84,7 +84,7 @@ end
 #===
 # create index
 table = "gff_records"
-%w{id parent source feature}.each do |col|
+%w{id parent source type}.each do |col|
   idxname = "index_#{table}_on_#{col}"
   sql = "CREATE INDEX #{idxname} ON #{table}(#{col})"
   db.execute(sql)

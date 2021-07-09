@@ -15,17 +15,17 @@ class GffDb
   #
   # gff_records (
   #   line_num     integer primary key,
-  #   record       text,
+  #   record       text,            # original record
   #   id           text,
   #   parent       text,
-  #   seqname      text not null,
+  #   seqid        text not null,
   #   source       text,
-  #   feature      text,
+  #   type         text,
   #   start        integer not null,
   #   end          integer not null,
   #   score        real,
   #   strand       varchar(1),
-  #   frame        integer,
+  #   phase        integer,
   #   attributes   text,
   #   attributes_json json
   # )
@@ -58,14 +58,14 @@ class GffDb
       record       text,
       id           text,
       parent       text,
-      seqname      text not null,
+      seqid        text not null,
       source       text,
-      feature      text,
+      type         text,
       start        integer not null,
       end          integer not null,
       score        real,
       strand       varchar(1),
-      frame        integer,
+      phase        integer,
       attributes   text,
       attributes_json json
     );
@@ -99,7 +99,7 @@ class GffDb
         parent =  ((gr.attributes.select{|a| a[0] == "Parent"}[0]) || [])[1]
         a = l.chomp.split(/\t/)
     
-        sql = "INSERT INTO gff_records (line_num, record, id, parent, seqname, source, feature, start, end, score, strand, frame, attributes, attributes_json)
+        sql = "INSERT INTO gff_records (line_num, record, id, parent, seqid, source, type, start, end, score, strand, phase, attributes, attributes_json)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         values = [i, l.chomp, id, parent, 
           a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], 
@@ -110,7 +110,7 @@ class GffDb
 
     ## Indexing the sqlite3 table
     table = "gff_records"
-    %w{id parent source feature}.each do |col|
+    %w{id parent source type}.each do |col|
       idxname = "index_#{table}_on_#{col}"
       sql = "CREATE INDEX #{idxname} ON #{table}(#{col})"
       sq3_db.execute(sql)
@@ -223,21 +223,21 @@ class GffDb
 
     def initialize(db = nil)
       @db = db
-      @seqname
+      @seqid
       @source
-      @feature
+      @type
       @start
       @end
       @score
       @strand
-      @frame
+      @phase
       @attributes
       @id
       @parent_id
       @gffline
     end
 
-    attr_accessor :seqname, :source, :feature, :start, :end, :score, :strand, :frame, :attributes
+    attr_accessor :seqid, :source, :type, :start, :end, :score, :strand, :phase, :attributes
     attr_accessor :id, :parent_id, :gffline, :line_num
 
     def to_s
@@ -246,14 +246,14 @@ class GffDb
 
     def to_hash
       h = {
-        'seqname' => seqname,
+        'seqid' => seqid,
         'source' => source,
-        'feature' => feature,
+        'type' => type,
         'start' => start,
         'end' => self.end,
         'score' => score,
         'strand' => strand,
-        'frame' => frame,
+        'phase' => phase,
         'line_num' => line_num,
         'id' => id,
         'parent_id' => parent_id,
@@ -270,14 +270,14 @@ class GffDb
     def build_from_db_record(sql_result)
       ## sql_result: Array returned by @db.execute(sql)
       v = sql_result
-      @seqname = v[4]
+      @seqid = v[4]
       @source  = v[5]
-      @feature = v[6]
+      @type = v[6]
       @start = v[7]
       @end = v[8]
       @score = v[9]
       @strand = v[10]
-      @frame = v[11]
+      @phase = v[11]
       @line_num = v[0]
       @gffline = v[1]
       @id = v[2]
@@ -381,6 +381,6 @@ if __FILE__ == $0
   exit
   db.each_line do |an|
     p an
-#    p [an.id, an.seqname, an.start, an.end, an.attributes["protein_id"]]
+#    p [an.id, an.seqid, an.start, an.end, an.attributes["protein_id"]]
   end
 end

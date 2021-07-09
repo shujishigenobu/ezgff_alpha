@@ -97,10 +97,10 @@ class EzgffCLI < Thor
     end
 
     ## Filter results
-    ## - type / feature
+    ## - type / type
     if options[:type]
       target_type = options[:type]
-      results = results.select{|r| r.feature == target_type}
+      results = results.select{|r| r.type == target_type}
     end
 
     case options[:format]
