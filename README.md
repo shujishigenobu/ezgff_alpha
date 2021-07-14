@@ -2,12 +2,17 @@
 
 ## What is ezgff_alpha
 
+Utilities for GFF3, the genome annotation format. Useful to explore the gene model features.
+
 ## Pre-requisites
 
   * sqlite3
 
 ## Install
 
+```bash
+gem ezgff
+```
 
 ## Quick start
 
