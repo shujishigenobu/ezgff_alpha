@@ -26,6 +26,11 @@ module Ezgff
     end
     ## end of -h option setting
 
+    desc "version", "show version number"
+    def version()
+      puts Ezgff::VERSION 
+    end
+
     desc "view DB QUERY", "retrieve GFF record by ID and view it in a specified format.
     DB     path to ezdb
           ezdb should be created by using 'build' subcommand in advance.
