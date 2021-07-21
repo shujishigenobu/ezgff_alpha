@@ -103,8 +103,20 @@ module Ezgff
       
           sql = "INSERT INTO gff_records (line_num, record, id, parent, seqid, source, type, start, end, score, strand, phase, attributes, attributes_json)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-          values = [i, l.chomp, id, parent, 
-            a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], 
+          values = [
+            i,       # line number
+            l.chomp, # raw record
+            id,      # ID
+            parent,  # parent ID
+            a[0],    # seqid
+            a[1],    # source
+            a[2],    # type
+            a[3],    # start
+            a[4],    # end
+            (a[5] == "." ? nil : a[5]),    # score
+            a[6],    # strand
+            (a[7] == "." ? nil : a[7]),    # phase
+            a[8],    # attributes
             attributes_as_json(l)]
           sq3_db.execute(sql, values)
         end

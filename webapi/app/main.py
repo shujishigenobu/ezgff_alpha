@@ -37,7 +37,7 @@ class GffRecord(BaseModel):
     end: int
     score: Optional[str] = None
     strand: str
-    phase: str
+    phase: Optional[int] = None
     line_num: int
     id: str
     parent_id: Optional[str] = None
