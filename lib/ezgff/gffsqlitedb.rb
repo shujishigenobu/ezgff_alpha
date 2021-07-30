@@ -225,8 +225,12 @@ module Ezgff
       end
     end
 
-    def search(query, num_limit=100)
-      sql = %Q{SELECT * FROM  gff_records WHERE id LIKE "%#{query}%" OR parent LIKE "%#{query}%" OR attributes LIKE "%#{query}%";}
+    def search(query, num_limit=100, type=nil)
+      sql = %Q{SELECT * FROM  gff_records WHERE id LIKE "%#{query}%" OR parent LIKE "%#{query}%" OR attributes LIKE "%#{query}%" }
+      if type
+        sql += %Q{ AND type=="#{type}"}
+      end
+      sql += %Q{ LIMIT #{num_limit} } ;
       STDERR.puts sql
       res = @db.execute(sql)
       res2 = res.map{|r| an = Annotation.new(@db); an.build_from_db_record(r); an}

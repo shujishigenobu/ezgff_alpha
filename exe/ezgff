@@ -132,6 +132,7 @@ module Ezgff
 
     desc "search DB QUERY", "search GFF record giving query"
     option :format, :aliases => :f, :enum => ["json", "gff"], :default => "gff"
+    option :type, :aliases => '-t', :desc => "Limit type (Column \#3 in GFF file) such as gene, mRNA and CDS"
     def search(db, query)
       ezdb = db
       files = Dir["#{ezdb}/*.sqlite3"]
@@ -144,7 +145,7 @@ module Ezgff
         raise "Multiple sqlite3 files found"
       end
       sq3_db = GffDb.new(sq3_file)
-      results = sq3_db.search(query, 100)
+      results = sq3_db.search(query, 100, options[:type])
       case options[:format]
       when "json"
         h = Hash.new
