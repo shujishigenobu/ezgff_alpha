@@ -54,3 +54,10 @@ ezgff view GCF_000009605.1_ASM960v1_genomic.gff.ezdb cds-WP_010895901.1  --with=
  |jq -r '.gff_records | map(select(.type == "gene"))[0] | [.seqid, .start, .end, .attributes.gene] \
  |@csv'
 ```
+
+## FAQ
+### Can I use GFF2 or GTF for ezgff?
+Ans.
+
+No. ezgff takes GFF3 format only. GFF2/GTF can be converted to GFF3 easily. gffread and other tools can be used for conversion.
+
