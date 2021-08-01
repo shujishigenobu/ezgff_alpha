@@ -163,7 +163,7 @@ module Ezgff
       end
       h2 = Hash.new
       h.each do |key, values|
-        if key == "Dbxref" || key == "Ontology_term"
+        if key == "Dbxref2" # dummy (not used currently)
           h3 = Hash.new
           values.each do |val|
             m = /(.+?):/.match(val)
@@ -172,6 +172,8 @@ module Ezgff
             h3.update({dbtag => dbval})
           end
           h2[key] = h3
+        elsif key == "Ontology_term" || key == "Alias" || key == "Dbxref"
+          h2[key] = values
         else
           h2[key] = values.join(",")
         end
