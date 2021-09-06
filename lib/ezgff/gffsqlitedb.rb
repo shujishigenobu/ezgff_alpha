@@ -188,7 +188,7 @@ module Ezgff
     def each_record
       sql = "SELECT * FROM gff_records"
       @db.execute(sql).each do |r|
-        an = Annotation.new()
+        an = Annotation.new(@db)
         an.build_from_db_record(r)
         yield an
       end
